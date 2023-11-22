@@ -36,12 +36,7 @@ public class Exercise1Fragment extends BaseFragment {
         View view = inflater.inflate(R.layout.fragment_exercise_1, container, false);
 
         mBtnCountIterations = view.findViewById(R.id.btn_count_iterations);
-        mBtnCountIterations.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                countIterations();
-            }
-        });
+        mBtnCountIterations.setOnClickListener(v -> new Thread(this::countIterations).start());
 
         return view;
     }
