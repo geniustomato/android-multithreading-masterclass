@@ -5,15 +5,15 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import com.techyourchance.multithreading.R;
 import com.techyourchance.multithreading.common.BaseFragment;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Exercise2Fragment extends BaseFragment {
 
@@ -22,6 +22,7 @@ public class Exercise2Fragment extends BaseFragment {
     }
 
     private byte[] mDummyData;
+    private AtomicBoolean mAbortCount = new AtomicBoolean(false);
 
     @Nullable
     @Override
@@ -39,6 +40,7 @@ public class Exercise2Fragment extends BaseFragment {
     @Override
     public void onStop() {
         super.onStop();
+        mAbortCount.set(true);
     }
 
     @Override
@@ -57,8 +59,13 @@ public class Exercise2Fragment extends BaseFragment {
                     } catch (InterruptedException e) {
                         return;
                     }
+
                     screenTimeSeconds++;
                     Log.d("Exercise 2", "screen time: " + screenTimeSeconds + "s");
+
+                    if(mAbortCount.get()) {
+                        return;
+                    }
                 }
             }
         }).start();
