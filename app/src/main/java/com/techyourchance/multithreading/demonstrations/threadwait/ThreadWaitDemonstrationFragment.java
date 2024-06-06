@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +32,8 @@ public class ThreadWaitDemonstrationFragment extends BaseFragment {
     }
 
     private static int MAX_TIMEOUT_MS = DefaultConfiguration.DEFAULT_FACTORIAL_TIMEOUT_MS;
+
+    private static final String TAG = "ThreadWaitDemo";
 
     private final Object LOCK = new Object();
 
@@ -126,6 +129,7 @@ public class ThreadWaitDemonstrationFragment extends BaseFragment {
                 ? 1 : Runtime.getRuntime().availableProcessors();
 
         synchronized (LOCK) {
+            Log.d(TAG, "Initializing mNumOfFinishThreads");
             mNumOfFinishedThreads = 0;
         }
 
@@ -165,6 +169,7 @@ public class ThreadWaitDemonstrationFragment extends BaseFragment {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    Log.d(TAG, "Starting thread " + (threadIndex + 1));
                     long rangeStart = mThreadsComputationRanges[threadIndex].start;
                     long rangeEnd = mThreadsComputationRanges[threadIndex].end;
                     BigInteger product = new BigInteger("1");
@@ -176,11 +181,16 @@ public class ThreadWaitDemonstrationFragment extends BaseFragment {
                     }
                     mThreadsComputationResults[threadIndex] = product;
 
-                    synchronized (LOCK) {
-                        mNumOfFinishedThreads++;
-                        LOCK.notifyAll();
-                    }
+                    Log.d(TAG, "Ending unsynchronized part of thread " + (threadIndex + 1));
 
+                    // The part that you enclosed in the synchronized block is only the part that's crucial for waiting
+                    // The computation is left as is in order to utilize multithreading benefits
+                    synchronized (LOCK) {
+                        Log.d(TAG, "Releasing LOCK from thread " + (threadIndex + 1));
+                        mNumOfFinishedThreads++;
+                        LOCK.notify();
+
+                    }
                 }
             }).start();
 
@@ -190,15 +200,18 @@ public class ThreadWaitDemonstrationFragment extends BaseFragment {
     @WorkerThread
     private void waitForThreadsResultsOrTimeoutOrAbort() {
         synchronized (LOCK) {
+            Log.d(TAG, "Starting waitForThreadsResultsOrTimeoutOrAbort()");
             while (mNumOfFinishedThreads != mNumberOfThreads && !mAbortComputation && !isTimedOut()) {
                 try {
+                    Log.d(TAG, "Waiting for other threads");
                     LOCK.wait(getRemainingMillisToTimeout());
                 } catch (InterruptedException e) {
+                    Log.d(TAG, "Waiting is Interrupted");
                     return;
                 }
             }
         }
-
+        Log.d(TAG, "Waiting is DONE");
     }
 
     private long getRemainingMillisToTimeout() {
@@ -207,6 +220,7 @@ public class ThreadWaitDemonstrationFragment extends BaseFragment {
 
     @WorkerThread
     private void processComputationResults() {
+        Log.d(TAG, "Start processComputationResults()");
         String resultString;
 
         if (mAbortComputation) {
